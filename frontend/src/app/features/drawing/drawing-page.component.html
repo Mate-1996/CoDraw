@@ -1,0 +1,219 @@
+<div class="drawing-shell" [class.loading]="isLoading()">
+
+
+  @if (isLoading()) {
+    <div class="full-loader">
+      <div class="spinner"></div>
+      <p>Loading canvas</p>
+    </div>
+  }
+
+
+  @if (pageError() && !isLoading()) {
+    <div class="full-error">
+      <p>{{ pageError() }}</p>
+      <button class="btn-ghost" (click)="goBack()"> Back to dashboard</button>
+    </div>
+  }
+
+  @if (!isLoading() && drawing()) {
+
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn-icon" (click)="goBack()" title="Back to dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="drawing-title-wrap">
+          <span class="drawing-title">{{ drawing()!.title }}</span>
+          <span class="drawing-code" (click)="copyJoinCode()" title="Click to copy join code">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            {{ drawing()!.joinCode }}
+          </span>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+  
+        <div class="tool-group">
+          <button class="tool-btn" [class.active]="activeTool() === 'pen'" (click)="selectTool('pen')" title="Pen">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+          <button class="tool-btn" [class.active]="activeTool() === 'eraser'" (click)="selectTool('eraser')" title="Eraser">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 20H7L3 16l11-11 6 6-1.5 1.5"/><path d="M6.5 17.5l5-5"/></svg>
+          </button>
+        </div>
+
+        <div class="tool-divider"></div>
+
+
+        <div class="color-palette">
+          @for (color of COLORS; track color) {
+            <button
+              class="color-btn"
+              [style.background]="color"
+              [class.active]="activeColor() === color && activeTool() === 'pen'"
+              [class.light]="color === '#ffffff'"
+              (click)="selectColor(color)"
+              [title]="color">
+            </button>
+          }
+          <label class="color-custom" title="Custom color">
+            <input type="color" [value]="activeColor()" (input)="selectColor($any($event.target).value)" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+          </label>
+        </div>
+
+        <div class="tool-divider"></div>
+
+        <div class="size-control">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg>
+          <input type="range" min="1" max="40" [value]="brushSize()" (input)="brushSize.set(+$any($event.target).value)" class="size-slider" />
+          <span class="size-label">{{ brushSize() }}px</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+
+        <button class="btn-collaborators" (click)="showInvite.set(!showInvite())" [class.panel-active]="showInvite()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          {{ (drawing()?.collaborators?.length ?? 0) + 1 }}
+        </button>
+
+        <button class="btn-icon" [class.panel-active]="showComments()" (click)="showComments.set(!showComments())" title="Comments">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+
+        <button class="btn-icon btn-danger-icon" (click)="clearCanvas()" title="Clear canvas">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </button>
+      </div>
+    </header>
+
+
+    <div class="canvas-wrap">
+
+      <canvas
+        #canvas
+        class="draw-canvas"
+        [style.cursor]="activeTool() === 'eraser' ? 'cell' : 'crosshair'"
+        (pointerdown)="onPointerDown($event)"
+        (pointermove)="onPointerMove($event)"
+        (pointerup)="onPointerUp()"
+        (pointerleave)="onPointerLeave()"
+        (pointercancel)="onPointerUp()">
+      </canvas>
+
+      <canvas #cursorCanvas class="cursor-canvas"></canvas>
+
+
+      <div class="brush-preview"
+        [style.width.px]="brushSize()"
+        [style.height.px]="brushSize()"
+        [style.background]="activeTool() === 'eraser' ? 'rgba(200,50,50,0.4)' : activeColor()">
+      </div>
+    </div>
+
+
+    @if (showComments()) {
+      <aside class="side-panel comments-panel">
+        <div class="panel-header">
+          <h3>Comments</h3>
+          <button class="btn-close" (click)="showComments.set(false)">✕</button>
+        </div>
+
+        <div class="comment-list">
+          @if (comments().length === 0) {
+            <div class="panel-empty">No comments yet.</div>
+          }
+          @for (comment of comments(); track trackById($index, comment)) {
+            <div class="comment-card">
+              <div class="comment-meta">
+                <span class="comment-author">{{ comment.userId.name }}</span>
+                <span class="comment-time">{{ comment.createdAt | date:'dd/MM HH:mm' }}</span>
+              </div>
+              @if (editingCommentId() === comment._id) {
+                <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-edit-form">
+                  <textarea formControlName="text" rows="2" class="comment-input"></textarea>
+                  <div class="comment-edit-actions">
+                    <button type="submit" class="btn-sm-primary" [disabled]="isSavingComment()">Save</button>
+                    <button type="button" class="btn-sm-ghost" (click)="cancelEdit()">Cancel</button>
+                  </div>
+                </form>
+              } @else {
+                <p class="comment-text">{{ comment.text }}</p>
+                @if (isCommentAuthor(comment)) {
+                  <div class="comment-actions">
+                    <button class="btn-sm-ghost" (click)="editComment(comment)">Edit</button>
+                    <button class="btn-sm-danger" (click)="deleteComment(comment)">Delete</button>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+
+        @if (editingCommentId() === null) {
+          <form [formGroup]="commentForm" (ngSubmit)="submitComment()" class="comment-form">
+            <textarea
+              formControlName="text"
+              rows="3"
+              placeholder="Add a comment"
+              class="comment-input">
+            </textarea>
+            <button type="submit" class="btn-primary-full" [disabled]="isSavingComment() || commentForm.invalid">
+              {{ isSavingComment() ? 'Posting' : 'Post comment' }}
+            </button>
+          </form>
+        }
+      </aside>
+    }
+
+
+    @if (showInvite()) {
+      <aside class="side-panel invite-panel">
+        <div class="panel-header">
+          <h3>Collaborators</h3>
+          <button class="btn-close" (click)="showInvite.set(false)">✕</button>
+        </div>
+
+        <div class="join-code-box">
+          <p class="join-code-label">Join code</p>
+          <div class="join-code-value" (click)="copyJoinCode()">
+            <span>{{ drawing()!.joinCode }}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </div>
+        </div>
+
+        <div class="collaborators-list">
+          <p class="collab-section-label">Members</p>
+          <div class="collab-item">
+            <div class="avatar">{{ drawing()!.ownerId.name[0] }}</div>
+            <div>
+              <p class="collab-name">{{ drawing()!.ownerId.name }}</p>
+              <p class="collab-role">Owner</p>
+            </div>
+          </div>
+          @for (c of drawing()!.collaborators; track c._id) {
+            <div class="collab-item">
+              <div class="avatar collab-avatar">{{ c.name[0] }}</div>
+              <div>
+                <p class="collab-name">{{ c.name }}</p>
+                <p class="collab-role">Collaborator</p>
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (isOwner()) {
+          <form [formGroup]="inviteForm" (ngSubmit)="inviteCollaborator()" class="invite-form">
+            <p class="collab-section-label">Invite by email</p>
+            <div class="invite-row">
+              <input type="email" formControlName="email" class="invite-input" />
+              <button type="submit" class="btn-invite">Invite</button>
+            </div>
+          </form>
+        }
+      </aside>
+    }
+  }
+</div>

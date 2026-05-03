@@ -1,0 +1,129 @@
+<div class="dashboard-shell">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-name">CoDraw</span>
+    </div>
+    <div class="topbar-user">
+      <span class="user-label">{{ currentUser()?.name }}</span>
+      <button class="btn-ghost" (click)="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Your canvases</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="showJoinModal.set(true)">
+          Join with code
+        </button>
+        <button class="btn-primary" (click)="showCreateModal.set(true)">
+          New canvas
+        </button>
+      </div>
+    </div>
+
+    @if (pageError()) {
+      <div class="alert-error">{{ pageError() }}</div>
+    }
+
+    @if (isLoading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading your canvases</p>
+      </div>
+    } @else if (drawings().length === 0) {
+      <div class="empty-state">
+        <h3>No canvases yet</h3>
+        <p>Create a new canvas or join one with a code</p>
+        <button class="btn-primary" (click)="showCreateModal.set(true)">Create your canvas</button>
+      </div>
+    } @else {
+      <div class="drawings-grid">
+        @for (drawing of drawings(); track trackById($index, drawing)) {
+          <div class="drawing-card" (click)="openDrawing(drawing)">
+            <div class="card-preview">Canvas</div>
+            <div class="card-body">
+              <div class="card-meta">
+                <span class="card-badge" [class.owner-badge]="isOwner(drawing)">
+                  {{ isOwner(drawing) ? 'Owner' : 'Collaborator' }}
+                </span>
+                @if (drawing.isPublic) {
+                  <span class="card-badge public-badge">Public</span>
+                }
+              </div>
+              <h3>{{ drawing.title }}</h3>
+              @if (drawing.description) {
+                <p class="card-desc">{{ drawing.description }}</p>
+              }
+              <div class="card-footer">
+                <div class="card-collab">
+                  @for (c of drawing.collaborators.slice(0, 3); track c._id) {
+                    <div class="avatar-chip">{{ c.name[0] }}</div>
+                  }
+                  @if (drawing.collaborators.length > 3) {
+                    <div class="avatar-chip more">+{{ drawing.collaborators.length - 3 }}</div>
+                  }
+                </div>
+                <button class="btn-danger-sm"
+                  (click)="deleteOrLeave(drawing, $event)"
+                  [title]="isOwner(drawing) ? 'Delete' : 'Leave'">
+                  {{ isOwner(drawing) ? 'Delete' : 'Leave' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+</div>
+
+@if (showCreateModal()) {
+  <div class="modal-backdrop" (click)="showCreateModal.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>New canvas</h2>
+        <button class="btn-close" (click)="showCreateModal.set(false)">✕</button>
+      </div>
+      <form [formGroup]="createForm" (ngSubmit)="createDrawing()" class="modal-form">
+        <label class="field">
+          <span>Title</span>
+          <input type="text" formControlName="title"  />
+        </label>
+        <label class="field">
+          <span>Description</span>
+          <textarea formControlName="description" rows="3" placeholder="Optional" ></textarea>
+        </label>
+        <label class="field-check">
+          <input type="checkbox" formControlName="isPublic" />
+          <span>Make public</span>
+        </label>
+        <button type="submit" class="btn-primary" [disabled]="isSaving()">
+          {{ isSaving() ? 'Creating' : 'Create canvas' }}
+        </button>
+      </form>
+    </div>
+  </div>
+}
+
+@if (showJoinModal()) {
+  <div class="modal-backdrop" (click)="showJoinModal.set(false)">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Join a canvas</h2>
+        <button class="btn-close" (click)="showJoinModal.set(false)">✕</button>
+      </div>
+      <form [formGroup]="joinForm" (ngSubmit)="joinDrawing()" class="modal-form">
+        <label class="field">
+          <span>Join code</span>
+          <input type="text" formControlName="code" placeholder="e.g. AB12CD34" style="text-transform:uppercase; letter-spacing: 0.08em;" />
+        </label>
+        <button type="submit" class="btn-primary" [disabled]="isSaving()">
+          {{ isSaving() ? 'Joining' : 'Join canvas' }}
+        </button>
+      </form>
+    </div>
+  </div>
+}

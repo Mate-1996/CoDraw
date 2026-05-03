@@ -1,0 +1,53 @@
+<div class="auth-shell">
+  <div class="auth-brand">
+    <div class="brand-mark">
+      <span class="brand-name">CoDraw</span>
+    </div>
+    <div class="brand-hero">
+      <h1>Draw together<br>in real time with your friends</h1>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="form-card">
+      <div class="form-header">
+        <h2>{{ mode() === 'login' ? 'Sign in to CoDraw' : 'Create your account' }}</h2>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="form">
+        @if (mode() === 'register') {
+          <label class="field">
+            <span>Full name</span>
+            <input type="text" formControlName="name"  autocomplete="name" />
+          </label>
+        }
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" formControlName="email" autocomplete="email" />
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <input type="password" formControlName="password" placeholder="At least 6 characters" autocomplete="current-password" />
+        </label>
+
+        @if (errorMessage()) {
+          <p class="error-msg">{{ errorMessage() }}</p>
+        }
+
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Please wait' : mode() === 'login' ? 'Sign in' : 'Create account' }}
+        </button>
+      </form>
+
+      <p class="switch">
+        @if (mode() === 'login') {
+          <a routerLink="/register">Register</a>
+        } @else {
+          <a routerLink="/login">Sign in</a>
+        }
+      </p>
+    </div>
+  </div>
+</div>
