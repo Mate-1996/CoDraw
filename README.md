@@ -44,4 +44,8 @@ The app is deployed on Render:
 
 https://codraw-static.onrender.com
 
+Link to the Video Presentation:
+
+https://drive.google.com/file/d/1u15l4RG-PylkOyqD2tqiNqzJK9_JlGtS/view?usp=sharing
+
 
