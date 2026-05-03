@@ -118,7 +118,7 @@
       <form [formGroup]="joinForm" (ngSubmit)="joinDrawing()" class="modal-form">
         <label class="field">
           <span>Join code</span>
-          <input type="text" formControlName="code" placeholder="e.g. AB12CD34" style="text-transform:uppercase; letter-spacing: 0.08em;" />
+          <input type="text" formControlName="code" placeholder="Code" style="text-transform:uppercase; letter-spacing: 0.08em;" />
         </label>
         <button type="submit" class="btn-primary" [disabled]="isSaving()">
           {{ isSaving() ? 'Joining' : 'Join canvas' }}
